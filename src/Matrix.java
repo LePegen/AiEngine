@@ -14,6 +14,17 @@ public class Matrix {
         }
     }
 
+    public Matrix(Matrix input) {
+        matrix =new ArrayList<>();
+        for (int i = 0; i < input.getRows(); i++) {
+            ArrayList<Double> currentRow=new ArrayList<>();
+            for (int j = 0; j < input.getColumns(); j++) {
+                currentRow.add(input.getElement(i,j));
+            }
+            matrix.add(currentRow);
+        }
+    }
+
 
     public double getElement(int row, int column){
         return  matrix.get(row).get(column);

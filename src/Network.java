@@ -1,7 +1,4 @@
-import sun.rmi.server.Activation;
-
 import java.util.ArrayList;
-import java.util.Vector;
 
 public class Network {
     /*
@@ -9,143 +6,175 @@ public class Network {
      Create multi-layer network
      Create class that will Serialize data
      Implement handwriting recognition
+     Implement testing
+
+     Note:
+     The code may seem similar to Michael Nielsen's neural network book. That is because the network was not resulting to accurate results.
+     I rendered his code in java line by line but it didn't fixed the problem. It turned out that my learning rate was to small and it took me days to figure that out.
+     Nonetheless my initial implementation is logically similar to the Michael Nielsen's work.
+
     */
 
-    ArrayList<Matrix> activations;
     ArrayList<Matrix> biases;
     ArrayList<Matrix> weights;
-    int layers;
+    int totalLayers;
 
-    public Network(int inputSize, int hiddenLayerSize, int outputLayerSize) {
-        this.layers = 3;
-        activations = new ArrayList<>();
+    public Network(int[] sizes) {
+        this.totalLayers = sizes.length;
         biases = new ArrayList<>();
         weights = new ArrayList<>();
 
-        activations.add(new Matrix(hiddenLayerSize, 1));
-        activations.add(new Matrix(hiddenLayerSize, 1));
-        activations.add(new Matrix(outputLayerSize, 1));
-
-        biases.add(new Matrix(hiddenLayerSize, 1));
-        biases.add(MatrixTools.randomMatrix(hiddenLayerSize, 1));
-        biases.add(MatrixTools.randomMatrix(outputLayerSize, 1));
-
-        //could be wrong values
-        weights.add(new Matrix(hiddenLayerSize, 1));
-        weights.add(MatrixTools.randomMatrix(hiddenLayerSize, inputSize));
-        weights.add(MatrixTools.randomMatrix(outputLayerSize, hiddenLayerSize));
-    }
-
-    public void loadData(Matrix matrix) {
-        activations.set(0, matrix);
-    }
-
-    public void propForward() {
-        for (int i = 1; i < layers; i++) {
-            //wa+b
-            Matrix weightbyactivation = MatrixTools.multiply(weights.get(i), activations.get(i - 1));
-            Matrix newActivation = MatrixTools.add(weightbyactivation, biases.get(i));
-            activations.set(i, MathTools.sigmoid(newActivation));
+        for (int i = 0; i < totalLayers -1; i++) {
+            biases.add(MatrixTools.randomMatrix(sizes[i+1], 1));
+            weights.add(MatrixTools.randomMatrix(sizes[i+1], sizes[i]));
         }
-        MatrixTools.printMatrix(activations.get(2));
+    }
 
-        System.out.println();
-        for (int i = 0; i < activations.size(); i++) {
-            //MatrixTools.printMatrix(activations.get(i));
-            //System.out.println();
+
+    public Matrix propForward(Matrix input) {
+        Matrix activation=new Matrix(input);
+        for (int i = 0; i < totalLayers -1; i++) {
+            Matrix tempMat=MatrixTools.add(MatrixTools.multiply(weights.get(i),activation),biases.get(i));
+            activation=MathTools.sigmoid(tempMat);
+        }
+        return activation;
+    }
+    /*
+    TODO:
+     Clean updateMiniBatch
+     */
+    public void train(ArrayList<Matrix> trainingData,ArrayList<Matrix> targetData,ArrayList<Matrix> testData,ArrayList<Matrix> testOutput,int epochs,int minibatchSize,double learningRate){
+
+        for (int i = 0; i < epochs; i++) {
+            for (int j = 0; j < trainingData.size()-minibatchSize; j+=minibatchSize) {
+                ArrayList<Matrix> miniTrainBatch= new ArrayList<Matrix>(trainingData.subList(j,j+minibatchSize));
+                ArrayList<Matrix> miniTargetBatch= new ArrayList<Matrix>(targetData.subList(j,j+minibatchSize));
+                updateMiniBatch(miniTrainBatch,miniTargetBatch,learningRate);
+            }
+            int correct = evaluate(testData,testOutput,5);
+            System.out.println("Epoch " + (i + 1) + ": " + correct + "/" + testData.size());
         }
 
 
     }
 
-    public void propBackward(Matrix input, Matrix target, double learningRate) {
+
+    public void updateMiniBatch(ArrayList<Matrix> x,ArrayList<Matrix> y,double eta){
+        int size=x.size();
+        ArrayList<Matrix> tempWeights=new ArrayList<>(this.weights.size());
+        ArrayList<Matrix> tempBiases=new ArrayList<>(this.biases.size());
+        //initialize values of ArrayLists
+        for (int i = 0; i < totalLayers -1; i++) {
+            //map values
+            Matrix referenceMatrix=this.weights.get(i);
+            tempWeights.add(new Matrix(referenceMatrix.getRows(),referenceMatrix.getColumns()));
+            referenceMatrix=this.biases.get(i);
+            tempBiases.add(new Matrix(referenceMatrix.getRows(),referenceMatrix.getColumns()));
+        }
+
+        for (int i = 0; i < size; i++) {
+            ArrayList<Matrix>[] wandb=propBackward(x.get(i),y.get(i));
+            ArrayList<Matrix> deltaW=wandb[0];
+            ArrayList<Matrix> deltaB=wandb[1];
+            //nw+dnw
+            for (int j = 0; j <this.totalLayers -1; j++) {
+                Matrix newMatrix=MatrixTools.add(deltaB.get(j),tempBiases.get(j));
+                tempBiases.set(j,newMatrix);
+                newMatrix=MatrixTools.add(deltaW.get(j),tempWeights.get(j));
+                tempWeights.set(j,newMatrix);
+            }
+        }
+
+        //set self
+        //w-(eta/len(mini_batch))*nw
+        for (int i = 0; i < totalLayers -1; i++) {
+            Matrix newMatrix=MatrixTools.subtract(this.weights.get(i),MatrixTools.multiplyS(tempWeights.get(i),eta/size));
+            this.weights.set(i,newMatrix);
+            newMatrix=MatrixTools.subtract(this.biases.get(i),MatrixTools.multiplyS(tempBiases.get(i),eta/size));
+            this.biases.set(i,newMatrix);
+        }
+    }
+
+
+
+    // weight=[0], bias=[1]
+    public ArrayList<Matrix>[] propBackward(Matrix x, Matrix y) {
+        ArrayList<Matrix> nablaW=new ArrayList<>();
+        ArrayList<Matrix> nablaB =new ArrayList<>();
+        for (int i = 0; i < totalLayers-1; i++) {
+            nablaW.add(new Matrix(weights.get(i).getRows(),weights.get(i).getColumns()));
+            nablaB.add(new Matrix(biases.get(i).getRows(),biases.get(i).getColumns()));
+        }
         //feed forward
-        ArrayList<Matrix> tempActivations = new ArrayList<>();
-        ArrayList<Matrix> tempZ = new ArrayList<>();
-        tempActivations.add(input);
-        tempZ.add(new Matrix(1, 1));
-        System.out.println("Input");
-        MatrixTools.printMatrix(input);
-        for (int i = 1; i < layers; i++) {
+        Matrix activation=new Matrix(x);
+        ArrayList<Matrix> activations = new ArrayList<>();
+        activations.add(activation);
+        ArrayList<Matrix> zs = new ArrayList<>();
+
+
+        for (int i = 0; i < totalLayers -1; i++) {
             //wa+b
-            Matrix weightbyactivation = MatrixTools.multiply(weights.get(i), activations.get(i - 1));
-            Matrix newActivation = MatrixTools.add(weightbyactivation, biases.get(i));
-            tempZ.add(newActivation);
-            Matrix zElement = MathTools.sigmoid(newActivation);
-            tempActivations.add(zElement);
+            Matrix z = MatrixTools.add(MatrixTools.multiply(this.weights.get(i), activation), this.biases.get(i));
+            zs.add(z);
+            activation= MathTools.sigmoid(z);
+            activations.add(activation);
         }
 
         //backprop
 
         //where y is the training matrix
-        int layerIndex = tempActivations.size() - 1;
-
         //for output->hidden layer
         //delta^L=changeC had sigPrime(Z^L)
         //change in C
-        Matrix cost = costFunction(tempActivations.get(layerIndex), target);  Matrix sigmoidD = MathTools.sigmoidDerivative(tempActivations.get(layerIndex));
-        Matrix delta = MatrixTools.multiply(cost, sigmoidD);
-
-        Matrix deltaB = delta;
-        Matrix deltaW = MatrixTools.multiply(delta,MatrixTools.transpose(tempActivations.get(layerIndex - 1)));
-
-        Matrix newWeight =  deltaW;
-        Matrix newBias =  deltaB;
-
-        weights.set(layerIndex, MatrixTools.subtract(this.weights.get(layerIndex), MatrixTools.scalarMultiplication(newWeight, learningRate)));
-        biases.set(layerIndex, MatrixTools.subtract(this.biases.get(layerIndex), MatrixTools.scalarMultiplication(newBias, learningRate)));
-
+        Matrix cost = costDerivative(activations.get(activations.size()-1), y);  Matrix sp = MathTools.sigmoidPrime(zs.get(zs.size()-1));
+        Matrix delta = MatrixTools.hadamardProduct(cost, sp);
+        nablaB.set(nablaB.size()-1, delta);
+        nablaW.set(nablaW.size()-1, MatrixTools.multiply(delta,MatrixTools.transpose(activations.get(activations.size()-2))));
 
         //next layer
-        layerIndex = tempActivations.size() - 2;
-        Matrix currentMatrix=tempZ.get(layerIndex);
+        for (int i = nablaB.size()-2; i>=0; i--){
+            Matrix z=zs.get(i);
+            sp = MathTools.sigmoidPrime(z);
+            // delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
+            delta = MatrixTools.hadamardProduct(MatrixTools.multiply(MatrixTools.transpose(this.weights.get(i+1)),delta),sp);
+            nablaB.set(i, delta);
+            nablaW.set(i, MatrixTools.multiply(delta,MatrixTools.transpose(activations.get(i))));
+        }
 
-        sigmoidD = MathTools.sigmoidDerivative(currentMatrix);
+        ArrayList[] wandb=new ArrayList[2];
+        wandb[0]=nablaW;
+        wandb[1]= nablaB;
+        return wandb;
+    }
 
-        cost=MatrixTools.transpose(this.weights.get(layerIndex+1));
-        delta = MatrixTools.multiply(MatrixTools.multiply(cost,delta), sigmoidD);
-        deltaB = delta;
-        deltaW = MatrixTools.multiply(delta,MatrixTools.transpose(tempActivations.get(layerIndex - 1)));
+    public int evaluate(ArrayList<Matrix> input,ArrayList<Matrix> target,double alpha){
+        int correct=0;
+        for (int i = 0; i < input.size(); i++) {
+            Matrix out= propForward(input.get(i));
+            Matrix currentData=target.get(i);
+            Matrix difference=MatrixTools.subtract(out,currentData);
 
+            for (int j = 0; j < difference.getRows(); j++) {
+                for (int k = 0; k < difference.getColumns(); k++) {
+                    if(Math.abs(difference.getElement(j,k))<alpha){
+                        correct++;
+                    }
+                }
+            }
 
-        newWeight = deltaW;
-        newBias =  deltaB;
-
-
-        this.weights.set(layerIndex, MatrixTools.subtract(this.weights.get(layerIndex), MatrixTools.scalarMultiplication(newWeight, learningRate)));
-        this.biases.set(layerIndex, MatrixTools.subtract(this.biases.get(layerIndex), MatrixTools.scalarMultiplication(newBias, learningRate)));
-        this.propForward();
-
-        /**
-        System.out.println("Cost");
-        Matrix costF=costFunction(this.activations.get(2),target);
-        System.out.println("Network");
-        MatrixTools.printMatrix(this.activations.get(2));
-        System.out.println("Target");
-        MatrixTools.printMatrix(target);
-        System.out.println("Cost");
-        MatrixTools.printMatrix(costF);
-        System.out.println();
-         **/
+        }
+        return correct;
     }
 
 
-    public Matrix costFunction(Matrix toAsses, Matrix trueVal) {
-        //(1/2n)*||y(x)-a||
+    public Matrix costDerivative(Matrix toAsses, Matrix trueVal) {
+        //
         return MatrixTools.subtract(toAsses,trueVal);
     }
 
 
-    public void train(double learningRate) {
-    }
-
     public void printLayers(){
-        System.out.println("Activations");
-        for (int i = 0; i <activations.size(); i++) {
-            System.out.println(i+1);
-            MatrixTools.printMatrix(activations.get(i));
-            System.out.println();
-        }
+
 
         System.out.println("Biases");
         for (int i = 0; i <biases.size(); i++) {
@@ -160,8 +189,9 @@ public class Network {
             System.out.println(i+1);
             MatrixTools.printMatrix(weights.get(i));
             System.out.println();
-
         }
+
+
     }
 
 
