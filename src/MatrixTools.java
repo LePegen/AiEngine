@@ -14,16 +14,16 @@ public class MatrixTools {
 
         int rows=matrix1.getRows();
         int columns=matrix1.getColumns();
-        Matrix matrix=new Matrix(rows,columns);
+        Matrix newMatrix=new Matrix(rows,columns);
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
                 double value=matrix1.getElement(i,j)+matrix2.getElement(i,j);
-                matrix.setElement(i,j,value);
+                newMatrix.setElement(i,j,value);
             }
         }
 
-        return matrix;
+        return newMatrix;
     }
 
     static Matrix subtract(Matrix matrix1,Matrix matrix2){
@@ -36,16 +36,16 @@ public class MatrixTools {
 
         int rows=matrix1.getRows();
         int columns=matrix1.getColumns();
-        Matrix matrix=new Matrix(rows,columns);
+        Matrix newMatrix=new Matrix(rows,columns);
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
                 double value=matrix1.getElement(i,j)-matrix2.getElement(i,j);
-                matrix.setElement(i,j,value);
+                newMatrix.setElement(i,j,value);
             }
         }
 
-        return matrix;
+        return newMatrix;
     }
 
     static Matrix subtractPow(Matrix matrix1,Matrix matrix2,int pow){
@@ -55,7 +55,8 @@ public class MatrixTools {
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
-                double value=Math.pow(matrix1.getElement(i,j)-matrix2.getElement(i,j),pow);
+
+                double value=.5*Math.pow(matrix1.getElement(i,j)-matrix2.getElement(i,j),pow);
                 matrix.setElement(i,j,value);
             }
         }
@@ -73,16 +74,16 @@ public class MatrixTools {
             System.out.println("WARNING ROWS ARE UNEVEN");
         }
 
-        Matrix matrix=new Matrix(rows,columns);
+        Matrix newMatrix=new Matrix(rows,columns);
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
                 double value=matrix1.getElement(i,j)*matrix2.getElement(i,j);
-                matrix.setElement(i,j,value);
+                newMatrix.setElement(i,j,value);
             }
         }
 
-        return matrix;
+        return newMatrix;
     }
 
     static Matrix transpose(Matrix matrix){
@@ -100,7 +101,7 @@ public class MatrixTools {
     static Matrix multiply(Matrix matrix1,Matrix matrix2){
         int rows=matrix1.getRows();
         int columns=matrix2.getColumns();
-        Matrix matrix=new Matrix(rows,columns);
+        Matrix newMatrix=new Matrix(rows,columns);
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
@@ -108,11 +109,11 @@ public class MatrixTools {
                 for (int k = 0; k < matrix1.getColumns(); k++) {
                     currentSum+=matrix1.getElement(i,k)*matrix2.getElement(k,j);
                 }
-                matrix.setElement(i,j,currentSum);
+                newMatrix.setElement(i,j,currentSum);
             }
         }
 
-        return matrix;
+        return newMatrix;
     }
 
 
@@ -131,15 +132,12 @@ public class MatrixTools {
         int rows=matrix.getRows();
         int columns=matrix.getColumns();
         Matrix newMatrix=new Matrix(rows,columns);
-
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
                 double value=matrix.getElement(i,j)*scalar;
                 newMatrix.setElement(i,j,value);
             }
         }
-
-
         return newMatrix;
     }
 

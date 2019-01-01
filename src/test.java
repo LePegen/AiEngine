@@ -2,20 +2,23 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class test {
+    /**
+     * Implementation of the XOR problem using the network
+     */
     public static void main(String[] args) {
-        Network network = new Network(new int[]{2, 2, 1});
+        Network network = new Network(new int[]{2,1, 1});
 
-        double[][][] xorBits = {
-                {{0}, {0}},
-                {{1}, {1}},
-                {{0}, {1}},
-                {{1}, {0}}
+        double[][][] bits = {
+                {{1.0}, {1.0}},
+                {{1.0}, {0.0}},
+                {{0}, {1.0}},
+                {{0}, {0}}
         };
         double[][][] trueVal = {
                 {{0}},
-                {{0}},
-                {{1}},
-                {{1}}
+                {{1.0}},
+                {{1.0}},
+                {{0}}
         };
 
 
@@ -25,34 +28,68 @@ public class test {
         ArrayList<Matrix> evaluationTargetData = new ArrayList<>();
 
         int size = 1000;
-        int evalutaionSize=100;
-        double learningRate=.001;
-        int epoch=10;
+        int evaluationSize=100;
+
+        for (int i = 0; i < 1000; i++) {
+            int index= (int) (Math.random()*4);
+            Matrix trainValue=new Matrix(2,1);
+            Matrix trueValMat=new Matrix(1,1);
+            trainValue.setElement(0,0,bits[index][0][0]);
+            trainValue.setElement(1,0,bits[index][1][0]);
+            trueValMat.setElement(0,0,trueVal[index][0][0]);
+            trainingData.add(trainValue);
+            targetData.add(trueValMat);
+        }
+
+        for (int i = 0; i < 100; i++) {
+            int index= (int) (Math.random()*4);
+            Matrix trainValue=new Matrix(2,1);
+            Matrix trueValMat=new Matrix(1,1);
+            trainValue.setElement(0,0,bits[index][0][0]);
+            trainValue.setElement(1,0,bits[index][1][0]);
+            trueValMat.setElement(0,0,trueVal[index][0][0]);
+            evaluationInputData.add(trainValue);
+            evaluationTargetData.add(trueValMat);
+        }
+
+
+
+        double learningRate=.1;
+        int epoch=100;
         int batchSize=100;
-        for (int i = 0; i < size; i++) {
-            int index = (int) (Math.random() * xorBits.length);
-            Matrix data = MatrixTools.toMatrix(xorBits[index]);
-            Matrix target = MatrixTools.toMatrix(trueVal[index]);
-            trainingData.add(data);
-            targetData.add(target);
-        }
 
-        for (int i = 0; i < evalutaionSize; i++) {
-            int index = (int) (Math.random() * xorBits.length);
-            Matrix data = MatrixTools.toMatrix(xorBits[index]);
-            Matrix target = MatrixTools.toMatrix(trueVal[index]);
-            evaluationInputData.add(data);
-            evaluationTargetData.add(target);
-        }
+        network.train(trainingData,targetData,evaluationInputData,evaluationTargetData,epoch,batchSize,.1);
 
-        int index = (int) (Math.random() * xorBits.length);
-        Matrix random = MatrixTools.toMatrix(xorBits[index]);
+        int index;
+        Matrix random;
 
-        network.printLayers();
+        index = (int) (Math.random() * bits.length);
+        random = MatrixTools.toMatrix(bits[index]);
+        System.out.println("Random");
+        MatrixTools.printMatrix(random);
         System.out.println("Random");
         MatrixTools.printMatrix(network.propForward(random));
-
-        network.train(trainingData,targetData,evaluationInputData,evaluationTargetData,epoch,batchSize,learningRate);
+        System.out.println();
+        index = (int) (Math.random() * bits.length);
+        random = MatrixTools.toMatrix(bits[index]);
+        System.out.println("Random");
+        MatrixTools.printMatrix(random);
+        System.out.println("Random");
+        MatrixTools.printMatrix(network.propForward(random));
+        System.out.println();
+        index = (int) (Math.random() * bits.length);
+        random = MatrixTools.toMatrix(bits[index]);
+        System.out.println("Random");
+        MatrixTools.printMatrix(random);
+        System.out.println("Random");
+        MatrixTools.printMatrix(network.propForward(random));
+        System.out.println();
+        index = (int) (Math.random() * bits.length);
+        random = MatrixTools.toMatrix(bits[index]);
+        System.out.println("Random");
+        MatrixTools.printMatrix(random);
+        System.out.println("Random");
+        MatrixTools.printMatrix(network.propForward(random));
 
     }
 }

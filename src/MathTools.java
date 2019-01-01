@@ -19,13 +19,12 @@ public class MathTools {
 
     public static Matrix sigmoidPrime(Matrix z){
         Matrix x=sigmoid(z);
-
-        for (int i = 0; i < z.getRows(); i++) {
-            for (int j = 0; j < z.getColumns(); j++) {
-                x.setElement(i,j, (1-x.getElement(i,j)));
+        for (int i = 0; i < x.getRows(); i++) {
+            for (int j = 0; j < x.getColumns(); j++) {
+                    x.setElement(i,j,(1-x.getElement(i,j)));
             }
         }
-        return MatrixTools.hadamardProduct(z,x);
+        return MatrixTools.hadamardProduct(sigmoid(z),x);
     }
 
 }
